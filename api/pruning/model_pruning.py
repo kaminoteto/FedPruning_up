@@ -12,7 +12,7 @@ class SparseModel(nn.Module):
                 #  strategy:str="uniform_magnitude",
                 strategy:str="ERK_magnitude",
                  mask_dict: dict = {},
-                 ignore_layers:list[int, str, type]=[".*bias.*", nn.BatchNorm2d, ".*bn.*", nn.LayerNorm, ".*ln.*"], 
+                 ignore_layers: list[int, str, type]=[0, "bias", nn.BatchNorm2d, "bn"], 
                  device = None,
                  ):
         super(SparseModel, self).__init__()
