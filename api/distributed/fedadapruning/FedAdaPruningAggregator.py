@@ -122,13 +122,13 @@ class FedAdaPruningAggregator(object):
                     _, local_lowest_k_indices = torch.topk(torch.abs(model_dict[model_name].view(-1)[active_indices]), k, largest=False)
                     # update a tmp voting dict and voting
                     local_weight_voting_dict = torch.zeros_like(weight_voting_dict).cpu()
-                    local_weight_voting_dict.view(-1)[active_indices[local_lowest_k_indices.cpu()]] = 1.0
+                    local_weight_voting_dict.view(-1)[active_indices[local_lowest_k_indices.cpu()]] = ratio
                     # voting based on sample num(importance related to training data size)
                     weight_voting_dict += local_weight_voting_dict * client_w
                 # update global voting probabilities
                 _, global_lowest_k_indices = torch.topk(torch.abs(param.view(-1)[active_indices]), k, largest=False)
                 global_weight_voting_dict = torch.zeros_like(weight_voting_dict).cpu()
-                global_weight_voting_dict.view(-1)[active_indices[global_lowest_k_indices.cpu()]] = 1.0
+                global_weight_voting_dict.view(-1)[active_indices[global_lowest_k_indices.cpu()]] = ratio
                 weight_voting_dict = (1 - gamma) * weight_voting_dict + gamma * global_weight_voting_dict
 
                 active_votes = weight_voting_dict.view(-1)[active_indices]
@@ -144,7 +144,7 @@ class FedAdaPruningAggregator(object):
                 # update betas
                 if self.args.ts_beta_update == 1:
                     self.weight_betas[name].view(-1)[active_indices] += (ratio - active_votes)
-                    self.weight_betas[name] = torch.clamp(self.weight_betas[name], min=1e-6) # add protection
+                    # self.weight_betas[name] = torch.clamp(self.weight_betas[name], min=1e-6) # add protection
                 else:
                     active_zero_indices = (active_votes == 0) # find indices in voting which value equals to 0
                     active_avg_failed_prob = ratio * (float(active_votes.size()[0]) - k) / float(active_zero_indices.size()[0])
@@ -240,13 +240,13 @@ class FedAdaPruningAggregator(object):
                     _, local_lowest_k_indices = torch.topk(torch.abs(model_dict[model_name].view(-1)[active_indices]), k, largest=False)
                     # update a tmp voting dict and voting
                     local_weight_voting_dict = torch.zeros_like(weight_voting_dict).cpu()
-                    local_weight_voting_dict.view(-1)[active_indices[local_lowest_k_indices.cpu()]] = 1.0
+                    local_weight_voting_dict.view(-1)[active_indices[local_lowest_k_indices.cpu()]] = ratio
                     # voting based on sample num(importance related to training data size)
                     weight_voting_dict += local_weight_voting_dict * client_w
                 # update global voting probabilities
                 _, global_lowest_k_indices = torch.topk(torch.abs(param.view(-1)[active_indices]), k, largest=False)
                 global_weight_voting_dict = torch.zeros_like(weight_voting_dict).cpu()
-                global_weight_voting_dict.view(-1)[active_indices[global_lowest_k_indices.cpu()]] = 1.0
+                global_weight_voting_dict.view(-1)[active_indices[global_lowest_k_indices.cpu()]] = ratio
                 weight_voting_dict = (1 - gamma) * weight_voting_dict + gamma * global_weight_voting_dict
 
                 # Growing voting, based on gradients
@@ -279,7 +279,7 @@ class FedAdaPruningAggregator(object):
                 if self.args.ts_beta_update == 1:
                     # avg_active_prob = ratio * k / float(active_votes.size()[0])
                     self.weight_betas[name].view(-1)[active_indices] += (ratio - active_votes)
-                    self.weight_betas[name] = torch.clamp(self.weight_betas[name], min=1e-6) # add protection
+                    # self.weight_betas[name] = torch.clamp(self.weight_betas[name], min=1e-6) # add protection
                 else:
                     active_zero_indices = (active_votes == 0) # find indices which value equals to 0
                     active_avg_failed_prob = ratio * (float(active_votes.size()[0]) - k) / float(active_zero_indices.size()[0])
