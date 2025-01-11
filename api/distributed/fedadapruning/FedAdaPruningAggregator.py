@@ -108,7 +108,7 @@ class FedAdaPruningAggregator(object):
                 active_num = (mask_dict[name] == 1).int().sum().item()
                 k = int(f_decay(t, alpha, T_end) * active_num)
                 model_name = f'model.{name}'
-                
+
                 weight_voting_dict = torch.zeros_like(self.model_dict[0][model_name]).cpu()
                 active_indices = (mask_dict[name].view(-1) == 1).nonzero(as_tuple=False).view(-1).cpu()
                 for idx in range(self.worker_num):
@@ -119,16 +119,17 @@ class FedAdaPruningAggregator(object):
                         model_dict = transform_list_to_tensor(model_dict)
                     # select lowest_k weights' indices
                     # !!! NOTE: Need to update lowest in activate index
-                    _, local_lowest_k_indices = torch.topk(torch.abs(model_dict[model_name].view(-1)[active_indices]), k, largest=False)
+                    _, local_lowest_k_indices = torch.topk(torch.abs(model_dict[model_name].view(-1)[active_indices]),
+                                                           k, largest=False)
                     # update a tmp voting dict and voting
                     local_weight_voting_dict = torch.zeros_like(weight_voting_dict).cpu()
-                    local_weight_voting_dict.view(-1)[active_indices[local_lowest_k_indices.cpu()]] = ratio
+                    local_weight_voting_dict.view(-1)[active_indices[local_lowest_k_indices.cpu()]] = 1.0
                     # voting based on sample num(importance related to training data size)
                     weight_voting_dict += local_weight_voting_dict * client_w
                 # update global voting probabilities
                 _, global_lowest_k_indices = torch.topk(torch.abs(param.view(-1)[active_indices]), k, largest=False)
                 global_weight_voting_dict = torch.zeros_like(weight_voting_dict).cpu()
-                global_weight_voting_dict.view(-1)[active_indices[global_lowest_k_indices.cpu()]] = ratio
+                global_weight_voting_dict.view(-1)[active_indices[global_lowest_k_indices.cpu()]] = 1.0
                 weight_voting_dict = (1 - gamma) * weight_voting_dict + gamma * global_weight_voting_dict
 
                 active_votes = weight_voting_dict.view(-1)[active_indices]
@@ -143,11 +144,11 @@ class FedAdaPruningAggregator(object):
                 self.weight_alphas[name].view(-1)[active_indices] += active_votes
                 # update betas
                 if self.args.ts_beta_update == 1:
-                    self.weight_betas[name].view(-1)[active_indices] += (ratio - active_votes)
+                    self.weight_betas[name].view(-1)[active_indices] += (1 - active_votes)
                     # self.weight_betas[name] = torch.clamp(self.weight_betas[name], min=1e-6) # add protection
                 else:
                     active_zero_indices = (active_votes == 0) # find indices in voting which value equals to 0
-                    active_avg_failed_prob = ratio * (float(active_votes.size()[0]) - k) / float(active_zero_indices.size()[0])
+                    active_avg_failed_prob = (float(active_votes.size()[0]) - k) / float(active_zero_indices.size()[0])
                     self.weight_betas[name].view(-1)[active_indices][active_zero_indices] += active_avg_failed_prob
 
         end_time = time.time()
@@ -227,27 +228,6 @@ class FedAdaPruningAggregator(object):
                 # update clients' voting probabilities
                 # !!!! NOTE: key in model_dict is not equals to key in mask_dict and gradient
                 model_name = f'model.{name}'
-                weight_voting_dict = torch.zeros_like(self.model_dict[0][model_name]).cpu()
-                active_indices = (mask_dict[name].view(-1) == 1).nonzero(as_tuple=False).view(-1).cpu()
-                for idx in range(self.worker_num):
-                    model_dict = self.model_dict[idx]
-                    # p_k
-                    client_w = self.sample_num_dict[idx] / training_num
-                    if self.args.is_mobile == 1:
-                        model_dict = transform_list_to_tensor(model_dict)
-                    # select lowest_k weights' indices
-                    # !!! NOTE: Need to update lowest in activate index
-                    _, local_lowest_k_indices = torch.topk(torch.abs(model_dict[model_name].view(-1)[active_indices]), k, largest=False)
-                    # update a tmp voting dict and voting
-                    local_weight_voting_dict = torch.zeros_like(weight_voting_dict).cpu()
-                    local_weight_voting_dict.view(-1)[active_indices[local_lowest_k_indices.cpu()]] = ratio
-                    # voting based on sample num(importance related to training data size)
-                    weight_voting_dict += local_weight_voting_dict * client_w
-                # update global voting probabilities
-                _, global_lowest_k_indices = torch.topk(torch.abs(param.view(-1)[active_indices]), k, largest=False)
-                global_weight_voting_dict = torch.zeros_like(weight_voting_dict).cpu()
-                global_weight_voting_dict.view(-1)[active_indices[global_lowest_k_indices.cpu()]] = ratio
-                weight_voting_dict = (1 - gamma) * weight_voting_dict + gamma * global_weight_voting_dict
 
                 # Growing voting, based on gradients
                 # update clients' voting probabilities
@@ -258,34 +238,26 @@ class FedAdaPruningAggregator(object):
                     gradient_dict = self.gradient_dict[idx]
                     # p_k
                     client_w = self.sample_num_dict[idx] / training_num
-                    _, local_largest_k_indices = torch.topk(torch.abs(gradient_dict[name].view(-1)[inactive_indices]), k, largest=True)
+                    _, local_largest_k_indices = torch.topk(torch.abs(gradient_dict[name].view(-1)[inactive_indices]),
+                                                            k, largest=True)
                     # update a tmp voting dict and voting
                     local_gradient_voting_dict = torch.zeros_like(gradient_voting_dict).cpu()
                     local_gradient_voting_dict.view(-1)[inactive_indices[local_largest_k_indices.cpu()]] = 1
                     # voting based on sample num(importance related to training data size)
                     gradient_voting_dict += local_gradient_voting_dict * client_w
                 # update global voting probabilities
-                _, global_largest_k_indices = torch.topk(torch.abs(gradients[name].view(-1)[inactive_indices]), k, largest=True)
+                _, global_largest_k_indices = torch.topk(torch.abs(gradients[name].view(-1)[inactive_indices]), k,
+                                                         largest=True)
                 global_gradient_voting_dict = torch.zeros_like(gradient_voting_dict).cpu()
                 global_gradient_voting_dict.view(-1)[inactive_indices[global_largest_k_indices.cpu()]] = 1
                 gradient_voting_dict = (1 - gamma) * gradient_voting_dict + gamma * global_gradient_voting_dict
                 # pruning, update probabilities based on beta distribution
-                active_indices = (mask_dict[name].view(-1) == 1).nonzero(as_tuple=False).view(-1).cpu()
-                active_votes = weight_voting_dict.view(-1)[active_indices]
 
-                # update alphas
-                self.weight_alphas[name].view(-1)[active_indices] += active_votes
-                # update betas
-                if self.args.ts_beta_update == 1:
-                    # avg_active_prob = ratio * k / float(active_votes.size()[0])
-                    self.weight_betas[name].view(-1)[active_indices] += (ratio - active_votes)
-                    # self.weight_betas[name] = torch.clamp(self.weight_betas[name], min=1e-6) # add protection
-                else:
-                    active_zero_indices = (active_votes == 0) # find indices which value equals to 0
-                    active_avg_failed_prob = ratio * (float(active_votes.size()[0]) - k) / float(active_zero_indices.size()[0])
-                    self.weight_betas[name].view(-1)[active_indices][active_zero_indices] += active_avg_failed_prob
+                active_indices = (mask_dict[name].view(-1) == 1).nonzero(as_tuple=False).view(-1).cpu()
+
                 # sample based on beta distribution
-                pruning_samples = torch.distributions.Beta(self.weight_alphas[name].view(-1)[active_indices], self.weight_betas[name].view(-1)[active_indices]).sample()
+                pruning_samples = torch.distributions.Beta(self.weight_alphas[name].view(-1)[active_indices],
+                                                           self.weight_betas[name].view(-1)[active_indices]).sample()
                 _, prune_indices = torch.topk(pruning_samples, k, largest=True)
                 # _, prune_indices = torch.topk(active_votes, k, largest=True) # 因为前面已经选出最低的k个并投票，因此仍然选prob最大的k个即可
                 mask_dict[name].view(-1)[active_indices[prune_indices.cpu()]] = 0
@@ -297,8 +269,10 @@ class FedAdaPruningAggregator(object):
                 growing_alphas = inactive_votes + avg_inactive_prob
                 # update betas
                 growing_betas = torch.full_like(growing_alphas, avg_inactive_prob)
-                inactive_zero_indices = (inactive_votes == 0) # find indices which value equals to 0
-                inactive_avg_failed_prob = ratio * (float(inactive_votes.size()[0]) - k) / float(inactive_zero_indices.size()[0])
+                inactive_zero_indices = (inactive_votes == 0)  # find indices which value equals to 0
+
+                inactive_avg_failed_prob = (float(inactive_votes.size()[0]) - k) / float(
+                    inactive_zero_indices.size()[0])
                 growing_betas[inactive_zero_indices] += inactive_avg_failed_prob
                 # sample based on beta distribution
                 growing_samples = torch.distributions.Beta(growing_alphas, growing_betas).sample()
