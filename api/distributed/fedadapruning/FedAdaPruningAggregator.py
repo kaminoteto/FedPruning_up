@@ -133,8 +133,6 @@ class FedAdaPruningAggregator(object):
 
                 active_votes = weight_voting_dict.view(-1)[active_indices]
                 avg_active_prob = ratio * k / float(active_votes.size()[0])
-                active_zero_indices = (active_votes == 0) # find indices in voting which value equals to 0
-                active_avg_failed_prob = ratio * (float(active_votes.size()[0]) - k) / float(active_zero_indices.size()[0])
 
                 # Initialize beta distribution of thompson sampling on weights' history information.
                 if need_initialize:
@@ -144,7 +142,13 @@ class FedAdaPruningAggregator(object):
                 # update alphas
                 self.weight_alphas[name].view(-1)[active_indices] += active_votes
                 # update betas
-                self.weight_betas[name].view(-1)[active_indices][active_zero_indices] += active_avg_failed_prob
+                if self.args.ts_beta_update == 1:
+                    self.weight_betas[name].view(-1)[active_indices] += (ratio - active_votes)
+                    self.weight_betas[name] = torch.clamp(self.weight_betas[name], min=1e-6) # add protection
+                else:
+                    active_zero_indices = (active_votes == 0) # find indices in voting which value equals to 0
+                    active_avg_failed_prob = ratio * (float(active_votes.size()[0]) - k) / float(active_zero_indices.size()[0])
+                    self.weight_betas[name].view(-1)[active_indices][active_zero_indices] += active_avg_failed_prob
 
         end_time = time.time()
         logging.info("aggregate time cost: %d" % (end_time - start_time))
@@ -268,12 +272,18 @@ class FedAdaPruningAggregator(object):
                 # pruning, update probabilities based on beta distribution
                 active_indices = (mask_dict[name].view(-1) == 1).nonzero(as_tuple=False).view(-1).cpu()
                 active_votes = weight_voting_dict.view(-1)[active_indices]
-                active_zero_indices = (active_votes == 0) # find indices which value equals to 0
-                active_avg_failed_prob = ratio * (float(active_votes.size()[0]) - k) / float(active_zero_indices.size()[0])
+
                 # update alphas
                 self.weight_alphas[name].view(-1)[active_indices] += active_votes
                 # update betas
-                self.weight_betas[name].view(-1)[active_indices][active_zero_indices] += active_avg_failed_prob
+                if self.args.ts_beta_update == 1:
+                    # avg_active_prob = ratio * k / float(active_votes.size()[0])
+                    self.weight_betas[name].view(-1)[active_indices] += (ratio - active_votes)
+                    self.weight_betas[name] = torch.clamp(self.weight_betas[name], min=1e-6) # add protection
+                else:
+                    active_zero_indices = (active_votes == 0) # find indices which value equals to 0
+                    active_avg_failed_prob = ratio * (float(active_votes.size()[0]) - k) / float(active_zero_indices.size()[0])
+                    self.weight_betas[name].view(-1)[active_indices][active_zero_indices] += active_avg_failed_prob
                 # sample based on beta distribution
                 pruning_samples = torch.distributions.Beta(self.weight_alphas[name].view(-1)[active_indices], self.weight_betas[name].view(-1)[active_indices]).sample()
                 _, prune_indices = torch.topk(pruning_samples, k, largest=True)
