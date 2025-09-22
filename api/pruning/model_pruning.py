@@ -19,7 +19,7 @@ class SparseModel(nn.Module):
         # strategy is a str that [sparsity_distribution]_[pruning_strategy]
         # e.g. uniform_magnitude
 
-        self.model = model
+        self.model: nn.Module = model
         self.mask_dict = mask_dict
         self.strategy = strategy
         self.target_density = target_density
@@ -129,12 +129,14 @@ class SparseModel(nn.Module):
 
         return  layer_density_dict
 
-
-    def _init_prune(self, **kwargs):
+    def generate_mask_dict(self, **kwargs):
         layer_density_strategy, pruning_strategy = self.strategy.split("_")
         layer_density_dict = generate_layer_density_dict(self.layer_shape_dict, self.num_overall_elements,self.sparse_layer_set, self.target_density, layer_density_strategy)
         model_mask = pruning(self.model, layer_density_dict, pruning_strategy)
         return layer_density_dict, model_mask
+
+    def _init_prune(self, **kwargs):
+        return self.generate_mask_dict(**kwargs)
 
     def parameters(self, **kwargs):
         return self.model.parameters(**kwargs)

@@ -5,13 +5,14 @@ import sys
 from api.distributed.fedrandprune.FedRandPruneTrainer import FedRandPruneTrainer
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
-
+    
 try:
     from core.distributed.client.client_manager import ClientManager
     from core.distributed.communication.message import Message
 except ImportError:
     from FedPruning.core.distributed.client.client_manager import ClientManager
     from FedPruning.core.distributed.communication.message import Message
+
 from .message_define import MyMessage
 from .utils import transform_list_to_tensor, post_complete_message_to_sweep_process
 
@@ -25,9 +26,6 @@ class FedRandPruneClientManager(ClientManager):
         self.mode = 0
 
     # mode 0: the client receieve both weight and mask to clients;  config the new weight and mask, train; send the weight
-    # mode 1: the client receieve weights;  config the new weight, train;  send the weight,
-    # mode 2: the client receieve weights;  config the new weight; train, compute the gradients; send the weight and gradients
-    # TODO (special mode, only for \delta t == 1) mode 3: receieve both weight and mask to clients; config the new weight and mask, train, compute the gradients; send the weight and gradients. 
 
     def run(self):
         super().run()

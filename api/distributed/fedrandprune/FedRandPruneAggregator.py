@@ -30,6 +30,7 @@ class FedRandPruneAggregator(object):
         self.worker_num = worker_num
         self.device = device
         self.model_dict = dict()
+        self.mask_dict:dict[int, dict[str, torch.Tensor]] = dict()
         self.gradient_dict = dict()
         self.sample_num_dict = dict()
         self.flag_client_model_uploaded_dict = dict()
@@ -42,15 +43,14 @@ class FedRandPruneAggregator(object):
     def set_global_model_params(self, model_parameters):
         self.trainer.set_model_params(model_parameters)
 
+    def batch_generate_mask_dict(self):
+        for idx in range(self.worker_num):
+            self.mask_dict[idx] = self.trainer.model.generate_mask_dict()
+
     def add_local_trained_result(self, index, model_params, sample_num):
         logging.info("add_model. index = %d" % index)
         self.model_dict[index] = model_params
         self.sample_num_dict[index] = sample_num
-        self.flag_client_model_uploaded_dict[index] = True
-
-    def add_local_trained_gradient(self, index, gradient):
-        logging.info("add_gradient. index = %d" % index)
-        self.gradient_dict[index] = gradient
         self.flag_client_model_uploaded_dict[index] = True
 
     def check_whether_all_receive(self):

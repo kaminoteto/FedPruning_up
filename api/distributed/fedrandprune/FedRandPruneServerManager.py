@@ -8,6 +8,7 @@ from .message_define import MyMessage
 from .utils import transform_tensor_to_list, post_complete_message_to_sweep_process
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "../../../")))
+    
 try:
     from core.distributed.communication.message import Message
     from core.distributed.server.server_manager import ServerManager
@@ -60,12 +61,9 @@ class FedRandPruneServerManager(ServerManager):
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             global_model_params = self.aggregator.aggregate()
-            if self.mode in [2, 3]:
-                global_gradient = self.aggregator.aggregate_gradient()
-                # update the global model which is cached at the server side
-                self.aggregator.trainer.model.adjust_mask_dict(global_gradient, t=self.round_idx, T_end=self.args.T_end, alpha=self.args.adjust_alpha)
-                self.aggregator.trainer.model.to(self.aggregator.device)
-                self.aggregator.trainer.model.apply_mask()
+
+            # regenerate the mask dict separately for each client
+            self.aggregator.batch_generate_mask_dict()
                                                                                                                                                        
             # logging.info("mask_dict after pruning and growing = " +str(mask_dict))
             self.aggregator.test_on_server_for_all_clients(self.round_idx)
@@ -98,18 +96,12 @@ class FedRandPruneServerManager(ServerManager):
             if self.args.is_mobile == 1:
                 global_model_params = transform_tensor_to_list(global_model_params)
             
-            if self.mode in [0, 3]:
-                mask_dict = self.aggregator.trainer.model.mask_dict
+            for receiver_id in range(1, self.size):
+                mask_dict = self.aggregator.mask_dict[receiver_id - 1]
                 for k in mask_dict:
                     mask_dict[k] = mask_dict[k].cpu()
-                for receiver_id in range(1, self.size):
-                    self.send_message_sync_model_to_client(receiver_id, global_model_params,
-                        client_indexes[receiver_id - 1], self.mode, self.round_idx, mask_dict)
-            else:
-                for receiver_id in range(1, self.size):
-                    self.send_message_sync_model_to_client(receiver_id, global_model_params,
-                        client_indexes[receiver_id - 1], self.mode, self.round_idx)
-
+                self.send_message_sync_model_to_client(receiver_id, global_model_params,
+                    client_indexes[receiver_id - 1], self.mode, self.round_idx, mask_dict)
 
     def send_message_init_config(self:ServerManager, receive_id, global_model_params, client_index, mode_code, round_idx):
         message = Message(MyMessage.MSG_TYPE_S2C_INIT_CONFIG, self.get_sender_id(), receive_id)
