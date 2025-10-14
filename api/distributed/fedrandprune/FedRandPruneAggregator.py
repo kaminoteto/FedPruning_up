@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../../../")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../../")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "")))
 
-from api.standalone.fedrandprune.my_model_trainer_classification import MyModelTrainer
+from core.trainer.model_trainer import ModelTrainer
 import numpy as np
 import torch
 import wandb
@@ -21,7 +21,7 @@ class FedRandPruneAggregator(object):
     def __init__(self, train_global, test_global, all_train_data_num,
                  train_data_local_dict, test_data_local_dict, train_data_local_num_dict, worker_num, device,
                  args, model_trainer):
-        self.trainer: MyModelTrainer = model_trainer
+        self.trainer: ModelTrainer = model_trainer
 
         self.args = args
         self.train_global = train_global 
