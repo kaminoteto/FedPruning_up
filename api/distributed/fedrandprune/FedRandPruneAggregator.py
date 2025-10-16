@@ -165,7 +165,10 @@ class FedRandPruneAggregator(object):
             # logging.info(stats)
 
             # last seven testing should be tested with full testing dataset
-            _, mask_dict = self.trainer.model.generate_mask_dict()
+            if self.args.test_without_mask:
+                _, mask_dict = self.trainer.model.generate_mask_dict(target_density_override=1.0)
+            else:
+                _, mask_dict = self.trainer.model.generate_mask_dict()
             self.trainer.model.mask_dict = mask_dict
             self.trainer.model.apply_mask()
             if round_idx >= self.args.comm_round - 10 or self.args.num_eval == -1 :

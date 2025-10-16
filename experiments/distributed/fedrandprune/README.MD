@@ -20,7 +20,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 sh run_fedrandprune_distributed_pytorch.sh gpt2 tin
 ## Usage
 [$\cdot$] is mandatory arguments, {$\cdot$} is the optional arguments.
 ```
-CUDA_VISIBLE_DEVICES=[gpus] sh run_fedrandprune_distributed_pytorch.sh [model] [dataset] [client_num_in_total] [client_num_per_round]  [comm_round] [epochs] [target_density] [initial_lr]   {--T_end, --partition_alpha, --num_eval, --frequency_of_the_test}
+CUDA_VISIBLE_DEVICES=[gpus] sh run_fedrandprune_distributed_pytorch.sh [model] [dataset] [client_num_in_total] [client_num_per_round]  [comm_round] [epochs] [target_density] [initial_lr]   {--T_end, --partition_alpha, --num_eval, --frequency_of_the_test, --test_without_mask}
 ```
 
 where
@@ -39,4 +39,5 @@ where
 {--partition_alpha} refers to the partition alpha, higher partition alpha makes lower degree of data heterogeneity
 {--num_eval}is the number data samples for validation, -1 means using the whole testing dataset.
 {--frequency_of_the_test} the frequency to test/validate the performance during the training, using num_eval data samples
+{--test_without_mask} whether to test without mask
 ```

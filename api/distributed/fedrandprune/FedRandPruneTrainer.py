@@ -1,4 +1,4 @@
-from api.standalone.fedrandprune.my_model_trainer_classification import MyModelTrainer
+from core.trainer.model_trainer import ModelTrainer
 from .utils import transform_tensor_to_list
 
 
@@ -6,7 +6,7 @@ class FedRandPruneTrainer(object):
 
     def __init__(self, client_index, train_data_local_dict, train_data_local_num_dict, test_data_local_dict,
                  train_data_num, device, args, model_trainer):
-        self.trainer: MyModelTrainer = model_trainer
+        self.trainer: ModelTrainer = model_trainer
 
         self.client_index = client_index
         self.train_data_local_dict = train_data_local_dict

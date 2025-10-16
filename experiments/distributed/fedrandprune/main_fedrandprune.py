@@ -132,6 +132,8 @@ def add_args(parser):
 
     parser.add_argument("--growth_data_mode", type=str, default="batch", help=" the number of data samples used for parameter growth, option are [ 'random', 'single', 'batch', 'entire']" )
 
+    parser.add_argument("--test_without_mask", type=bool, default=False, help="whether to test without mask" )
+
     args = parser.parse_args()
     return args
 
