@@ -199,7 +199,7 @@ def aggregate_given_parameter_matrix(
 
         # print(f"sum_weighted_mask: {sum_weighted_mask}")
 
-        aggregated_params = torch.zeros(layer_shape)
+        aggregated_params = torch.zeros(layer_shape,dtype=origin_parameter.dtype,device=origin_parameter.device)
         # set the origin parameter to the aggregated parameter if all clients mask the parameter.
         mask_zero_positions = (sum_weighted_mask == 0)
         aggregated_params[mask_zero_positions] = origin_parameter[mask_zero_positions]
