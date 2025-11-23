@@ -12,8 +12,8 @@ import torch
 import wandb
 
 # add the FedML root directory to the python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../../../")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../../")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "")))
 
 from api.distributed.utils.gpu_mapping import mapping_processes_to_gpu_device_from_yaml_file
@@ -248,7 +248,7 @@ if __name__ == "__main__":
     if process_id == 0:
         wandb.init(
             project="FedPruning",
-            name="PruneFL_"
+            name="new_PruneFL_"
             + args.dataset 
             + "_"
             + args.model 

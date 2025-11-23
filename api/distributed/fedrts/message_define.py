@@ -21,7 +21,7 @@ class MyMessage(object):
     MSG_ARG_KEY_NUM_SAMPLES = "num_samples"
     MSG_ARG_KEY_MODEL_PARAMS = "model_params"
     MSG_ARG_KEY_MODEL_MASKS = "masks"
-    MSG_ARG_KEY_MODEL_GRADIENT = "gradient"
+    MSG_ARG_KEY_MODEL_GRADIENT_IDX = "gradient_idx"
     MSG_ARG_KEY_CLIENT_INDEX = "client_idx"
 
     MSG_ARG_KEY_MODE_CODE = "mode_code"

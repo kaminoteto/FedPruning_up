@@ -22,12 +22,6 @@ class FedRTSServerManager(ServerManager):
         self.preprocessed_client_lists = preprocessed_client_lists
         self.mode = 0 
 
-        # adaptive related
-        self.weight_beta = args.adaptive_beta
-        self.weight_momentum = None
-        self.gradient_beta = args.adaptive_beta
-        self.gradient_momentum = None
-
         # mode 0, the server send both weight and mask to clients, received the weight, perform weight aggregation, if t % \delta t == 0 and t <= t_end, go to mode 2, else, go to mode 1
         # mode 1, the server send weights, received the weights, perform weights aggregation, if t % \delta t == 0 and t <= t_end, go to mode 2, else, go to mode 1
         # mode 2, the server send weights, received the weights and gradients, perform weights and gradients aggregation, pruning and growing to produce new mask,  go to mode 0
@@ -72,54 +66,31 @@ class FedRTSServerManager(ServerManager):
                 self.mode = 0
 
         return self.mode
-    
+
     def handle_message_receive_model_from_client(self, msg_params):
         sender_id = msg_params.get(MyMessage.MSG_ARG_KEY_SENDER)
         model_params = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_PARAMS)
         local_sample_number = msg_params.get(MyMessage.MSG_ARG_KEY_NUM_SAMPLES)
         if self.mode in [2, 3]:
-            gradients = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_GRADIENT)
-            self.aggregator.add_local_trained_gradient(sender_id - 1, gradients)
-            
+            gradients_idx = msg_params.get(MyMessage.MSG_ARG_KEY_MODEL_GRADIENT_IDX)
+            self.aggregator.add_local_trained_gradient(sender_id - 1, gradients_idx)
+
         self.aggregator.add_local_trained_result(sender_id - 1, model_params, local_sample_number)
         b_all_received = self.aggregator.check_whether_all_receive()
         logging.info("b_all_received = " + str(b_all_received))
         if b_all_received:
             global_model_params = self.aggregator.aggregate(t=self.round_idx, T_end=self.args.T_end, alpha=self.args.adjust_alpha)
-            if self.args.enable_adaptive_aggregation == 1:
-                if self.weight_momentum is not None:
-                    logging.info("Start adaptive weights aggregation===================================================================================")
-                    for key in global_model_params.keys():
-                        self.weight_momentum[key] = torch.tensor(self.weight_momentum[key], dtype=torch.float32)
-                        global_model_params[key] = self.weight_momentum[key] * self.weight_beta + global_model_params[key] * (1 - self.weight_beta)
-                        # global_model_params[key] = global_model_params[key] / (1 - self.weight_beta ** self.round_idx) # corrected momentum
-                self.weight_momentum = global_model_params
-                self.aggregator.set_global_model_params(global_model_params)
 
             if self.mode in [2, 3]:
-                global_gradient = self.aggregator.aggregate_gradient()
-                if self.args.enable_adaptive_aggregation == 1:
-                    logging.info("Start adaptive gradients aggregation===================================================================================")
-                    if self.gradient_momentum is not None:
-                        for key in global_gradient.keys():
-                            self.gradient_momentum[key] = torch.tensor(self.gradient_momentum[key], dtype=torch.float32)
-                            global_gradient[key] = self.gradient_momentum[key] * self.gradient_beta + global_gradient[key] * (1 - self.gradient_beta)
-                            # global_gradient[key] = global_gradient[key] / (1 - self.gradient_beta ** self.round_idx) # corrected momentum
-                    self.gradient_momentum = global_gradient
-
                 # update the global model which is cached at the server side
-                if self.args.enable_ts == 1:
-                    self.aggregator.ts_pruning_growing(global_gradient, t=self.round_idx, T_end=self.args.T_end, alpha=self.args.adjust_alpha)
-                    logging.info("Start ts pruning&growing===================================================================================")
-                else:
-                    self.aggregator.trainer.model.adjust_mask_dict(global_gradient, t=self.round_idx, T_end=self.args.T_end, alpha=self.args.adjust_alpha)
-                # self.aggregator.trainer.model.adjust_mask_dict(global_gradient, t=self.round_idx, T_end=self.args.T_end, alpha=self.args.adjust_alpha)
+                self.aggregator.ts_adj(t=self.round_idx, T_end=self.args.T_end, alpha=self.args.adjust_alpha)
+
                 self.aggregator.trainer.model.to(self.aggregator.device)
                 self.aggregator.trainer.model.apply_mask()
-                
+
             # logging.info("mask_dict after pruning and growing = " +str(mask_dict))
             self.aggregator.test_on_server_for_all_clients(self.round_idx)
-            
+
             # start the next round
             self.round_idx += 1
 

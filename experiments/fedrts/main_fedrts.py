@@ -12,8 +12,8 @@ import torch
 import wandb
 
 # add the FedML root directory to the python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../../../")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../../")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "./../../")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "")))
 
 from api.distributed.utils.gpu_mapping import mapping_processes_to_gpu_device_from_yaml_file
@@ -98,17 +98,9 @@ def add_args(parser):
     
     parser.add_argument("--adjustment_epochs", type=int, default=None, help=" the number of local apoches used in model adjustment round, if it is set None, it is equal to the number of epoches for training round" )
 
-    parser.add_argument("--enable_adaptive_aggregation", type=int, default=0, help="use adaptive method")
-
-    parser.add_argument("--adaptive_beta", type=float, default=0.1, help="beta for momentum in aggregation")
-
-    parser.add_argument("--enable_ts", type=int, default=1, help="use thompson sampling")
-
     parser.add_argument("--aggregated_gamma", type=float, default=0.5, help="weight for aggregated param")
 
     parser.add_argument("--initial_distribution_ratio", type=float, default=10., help="ratio for initial beta distribution")
-
-    parser.add_argument("--ts_beta_update", type=int, default=1, help="whether use (1 - r_t) for all beta")
 
     # Following arguments are seldom changed
     parser.add_argument(
