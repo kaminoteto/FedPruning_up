@@ -17,6 +17,8 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 sh run_fedhml_distributed_pytorch.sh gpt2 tinystori
 CUDA_VISIBLE_DEVICES=0,1,2,3 sh run_fedhml_distributed_pytorch.sh gpt2 tinystories 100 10 500 5 0.1 0.1 --delta_T 10 --T_end 300 --num_eval 128 --frequency_of_the_test 10 --partition_alpha 5 --batch_size 16
 ```
 
+
+
 ## Usage
 [$\cdot$] is mandatory arguments, {$\cdot$} is the optional arguments.
 ```
@@ -41,3 +43,45 @@ where
 {--num_eval}is the number data samples for validation, -1 means using the whole testing dataset.
 {--frequency_of_the_test} the frequency to test/validate the performance during the training, using num_eval data samples
 ```
+
+## Experiment
+
+cd /data1/jxye/FedPruning_up/experiments/fedhml && conda activate fedpruning
+
+fuser -v /dev/nvidia5 |awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
+-------resnet18---------
+
+****cifar 10
+CUDA_VISIBLE_DEVICES=1,2,3,4 sh run_fedhml_distributed_pytorch.sh resnet18 cifar10 100 10 500 5 0.1 0.001 --delta_T 10 --T_end 300 --partition_alpha 0.5 --growth_data_mode batch --client_optimizer adam --num_eval 128 --frequency_of_the_test 10
+
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 sh run_fedhml_distributed_pytorch.sh resnet18 cifar10 100 10 500 5 0.1 0.001 --delta_T 10 --T_end 300 --partition_alpha 0.5 --growth_data_mode batch --client_optimizer adam --num_eval 128 --frequency_of_the_test 10
+
+****cinic10
+CUDA_VISIBLE_DEVICES=1,2,3,4 sh run_fedhml_distributed_pytorch.sh resnet18 cinic10 100 10 500 5 0.1 0.001 --delta_T 10 --T_end 300 --partition_alpha 0.5 --growth_data_mode batch --client_optimizer adam --num_eval 128 --frequency_of_the_test 10
+
+CUDA_VISIBLE_DEVICES=1,2,3,4 sh run_fedhml_distributed_pytorch.sh resnet18 cinic10 100 10 500 5 0.2 0.001 --delta_T 10 --T_end 300 --partition_alpha 0.5 --growth_data_mode batch --client_optimizer adam --num_eval 128 --frequency_of_the_test 10
+
+CUDA_VISIBLE_DEVICES=1,2,3,4 sh run_fedhml_distributed_pytorch.sh resnet18 cinic10 100 10 500 5 0.3 0.001 --delta_T 10 --T_end 300 --partition_alpha 0.5 --growth_data_mode batch --client_optimizer adam --num_eval 128 --frequency_of_the_test 10
+
+CUDA_VISIBLE_DEVICES=1,2,3,4 sh run_fedhml_distributed_pytorch.sh resnet18 cinic10 100 10 500 5 0.5 0.001 --delta_T 10 --T_end 300 --partition_alpha 0.5 --growth_data_mode batch --client_optimizer adam --num_eval 128 --frequency_of_the_test 10
+
+****svhn
+
+CUDA_VISIBLE_DEVICES=1,2,3,4 sh run_fedhml_distributed_pytorch.sh resnet18 svhn 100 10 500 5 0.1 0.001 --delta_T 10 --T_end 300 --partition_alpha 0.5 --growth_data_mode batch --client_optimizer adam --num_eval 128 --frequency_of_the_test 10
+
+CUDA_VISIBLE_DEVICES=1,2,3,4 sh run_fedhml_distributed_pytorch.sh resnet18 svhn 100 10 500 5 0.2 0.001 --delta_T 10 --T_end 300 --partition_alpha 0.5 --growth_data_mode batch --client_optimizer adam --num_eval 128 --frequency_of_the_test 10
+
+CUDA_VISIBLE_DEVICES=1,2,3,4 sh run_fedhml_distributed_pytorch.sh resnet18 svhn 100 10 500 5 0.3 0.001 --delta_T 10 --T_end 300 --partition_alpha 0.5 --growth_data_mode batch --client_optimizer adam --num_eval 128 --frequency_of_the_test 10
+
+CUDA_VISIBLE_DEVICES=1,2,3,4 sh run_fedhml_distributed_pytorch.sh resnet18 svhn 100 10 500 5 0.5 0.001 --delta_T 10 --T_end 300 --partition_alpha 0.5 --growth_data_mode batch --client_optimizer adam --num_eval 128 --frequency_of_the_test 10
+
+****tinyimagenet
+
+CUDA_VISIBLE_DEVICES=1,2,3,4 sh run_fedhml_distributed_pytorch.sh resnet18 tinyimagenet 100 10 500 5 0.1 0.001 --delta_T 10 --T_end 300 --partition_alpha 0.5 --growth_data_mode batch --client_optimizer adam --num_eval 128 --frequency_of_the_test 10
+
+CUDA_VISIBLE_DEVICES=1,2,3,4 sh run_fedhml_distributed_pytorch.sh resnet18 tinyimagenet 100 10 500 5 0.2 0.001 --delta_T 10 --T_end 300 --partition_alpha 0.5 --growth_data_mode batch --client_optimizer adam --num_eval 128 --frequency_of_the_test 10
+
+CUDA_VISIBLE_DEVICES=1,2,3,4 sh run_fedhml_distributed_pytorch.sh resnet18 tinyimagenet 100 10 500 5 0.3 0.001 --delta_T 10 --T_end 300 --partition_alpha 0.5 --growth_data_mode batch --client_optimizer adam --num_eval 128 --frequency_of_the_test 10
+
+CUDA_VISIBLE_DEVICES=1,2,3,4 sh run_fedhml_distributed_pytorch.sh resnet18 tinyimagenet 100 10 500 5 0.5 0.001 --delta_T 10 --T_end 300 --partition_alpha 0.5 --growth_data_mode batch --client_optimizer adam --num_eval 128 --frequency_of_the_test 10

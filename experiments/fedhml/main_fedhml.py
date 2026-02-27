@@ -135,6 +135,9 @@ def add_args(parser):
     parser.add_argument("--client_optimizer", type=str, default="sgd", help="SGD with momentum; adam")
 
     parser.add_argument("--growth_data_mode", type=str, default="batch", help=" the number of data samples used for parameter growth, option are [ 'random', 'single', 'batch', 'entire']" )
+    parser.add_argument("--lambda_etr", type=float, default=0.2, help='the ratio of topological pruning (0) to magnitude pruning (1)')
+
+
 
     args = parser.parse_args()
     return args

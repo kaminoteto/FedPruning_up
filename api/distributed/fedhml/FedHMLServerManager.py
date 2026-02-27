@@ -91,7 +91,7 @@ class FedHMLServerManager(ServerManager):
                     logging.info("Calculating Topological Mask via Homology...")
                     
                     # Compute mask based on the global model structure
-                    new_topo_mask = compute_topological_mask(self.aggregator.trainer.model, self.args.target_density)
+                    new_topo_mask = compute_topological_mask(self.aggregator.trainer.model, self.args.target_density, self.args.lambda_etr)
                     
                     # Apply this new mask to the server model
                     self.aggregator.trainer.model.mask_dict = new_topo_mask

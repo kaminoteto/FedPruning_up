@@ -110,7 +110,7 @@ class FedHMLAggregator(object):
 
         (num0, averaged_grad) = gradient_list[0]
         
-        # Crash Fix: Handle case where averaged_grad is None
+
         if averaged_grad is None:
             logging.info("averaged_grad is None, skipping gradient aggregation.")
             return None
